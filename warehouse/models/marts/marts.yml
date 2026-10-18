@@ -26,8 +26,14 @@ models:
         data_tests:
           - relationships: {arguments: {to: ref('dim_drg'), field: drg_code}}
       - name: payment_index
+        description: >
+          Actual over national-average payment for the same DRG and year. A handful of rows sit far out
+          (outlier cases, transfers), so extreme values warn rather than fail.
         data_tests:
-          - in_range: {arguments: {min: 0.05, max: 20}}
+          - in_range:
+              arguments: {min: 0.05, max: 20}
+              config: {severity: warn}
+          - in_range: {arguments: {min: 0, max: 200}}
   - name: mart_drg_year
     description: Price spread for each DRG and year.
     data_tests:
