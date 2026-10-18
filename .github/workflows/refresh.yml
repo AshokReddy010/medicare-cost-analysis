@@ -30,12 +30,16 @@ jobs:
           key: cms-inpatient-${{ hashFiles('src/medicare/fetch.py') }}-${{ github.run_id }}
           restore-keys: cms-inpatient-${{ hashFiles('src/medicare/fetch.py') }}-
       - name: Download every year
-        run: python -m medicare.fetch --out data/raw
+        run: |
+          set -o pipefail
+          python -m medicare.fetch --out data/raw 2>&1 | tee fetch.log
+          echo "::notice title=fetched::$(grep -E '^INFO [0-9]{4}:' fetch.log | sed ':a;N;$!ba;s/\n/%0A/g')"
       - name: Build and test the warehouse
         working-directory: warehouse
         run: |
           mkdir -p ../build
-          dbt build --profiles-dir .
+          set -o pipefail
+          dbt build --profiles-dir . 2>&1 | tee build.log || { echo "::error title=dbt build failed::$(grep -E 'FAIL|ERROR|Error|Got [0-9]+ result' build.log | tail -c 3000 | sed ':a;N;$!ba;s/\n/%0A/g')"; exit 1; }
           dbt docs generate --profiles-dir . --static
           cp target/static_index.html ../site/dbt-docs.html
       - name: Export the dashboard data
