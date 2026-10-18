@@ -118,3 +118,14 @@ def test_export(built, tmp_path):
     assert set(meta["top_drgs"]) == set(det) and all(len(v) >= 30 for v in det.values())
     hosp = json.loads((tmp_path / "hospitals.json").read_text())
     assert hosp["columns"][1] == "name" and len(hosp["rows"]) == 40
+
+
+def test_readme_findings_are_generated(built, tmp_path):
+    from medicare.readme import END, START, update
+
+    export(built, tmp_path / "data")
+    readme = tmp_path / "README.md"
+    readme.write_text(f"intro\n{START}\nold\n{END}\noutro\n")
+    update(readme, tmp_path / "data")
+    text = readme.read_text()
+    assert "\nold\n" not in text and "What the data shows" in text and text.endswith("outro\n")

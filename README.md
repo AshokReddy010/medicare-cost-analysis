@@ -8,6 +8,15 @@
 What do US hospitals bill Medicare for the same inpatient stay, and what are they actually paid? This project models every public release of CMS's *Medicare Inpatient Hospitals – by Provider and Service* (one row per hospital per diagnosis-related group per year, 2013 onward) into a tested dbt warehouse in DuckDB, and publishes an explorer of the results.
 
 <!-- FINDINGS:START -->
+## What the data shows (2013–2024)
+
+- **Hospitals bill about 5.0× what they are paid.** In 2024, 2,906 hospitals billed Medicare $5.03 in covered charges for every $1 of payment, up from $3.85 in 2013. At the median hospital the ratio is 4.2×; the highest among hospitals with at least 100 discharges is Capital Health Medical Center - Hopewell (Pennington, NJ) at 22.7×.
+- **Billing varies far more than payment.** For Septicemia or Severe Sepsis without MV >96 Hours with MCC (DRG 871, the most common stay), the 90th-percentile hospital bills 4.4× what the 10th-percentile one does ($32,161 vs $140,999), but is paid only 1.8× as much ($13,356 vs $23,576). The same pattern holds across the ten most common DRGs.
+- **Where payment is highest, case mix aside:** MD (1.40), NY (1.30), AK (1.28), CA (1.28) against VT (0.79), MS (0.76), AR (0.76) at the low end, mostly Medicare's own wage-index adjustment. Billed-to-paid is highest in NV (9.1×), CO (7.4×), FL (7.1×).
+- **Maryland sets its own rates.** Under its all-payer rate setting, hospitals' charges sit close to payments: 1.11× in 2024.
+- **Fewer, costlier stays.** Medicare fee-for-service discharges fell from 6.96 million in 2019 to 4.95 million in 2024, while payment per stay rose from $14,623 to $18,360. The volume never recovered after 2020, consistent with the shift of beneficiaries to Medicare Advantage, which this data does not cover.
+
+_Generated from the published data by `medicare.readme`; refreshed with every data update._
 <!-- FINDINGS:END -->
 
 ## Questions it answers

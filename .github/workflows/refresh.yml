@@ -43,12 +43,14 @@ jobs:
           dbt docs generate --profiles-dir . --static
           cp target/static_index.html ../site/dbt-docs.html
       - name: Export the dashboard data
-        run: python -m medicare.export --db build/medicare.duckdb --out site/data
+        run: |
+          python -m medicare.export --db build/medicare.duckdb --out site/data
+          python -m medicare.readme
       - name: Commit
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add site/data site/dbt-docs.html
+          git add site/data site/dbt-docs.html README.md
           if git diff --cached --quiet; then echo "no changes"; exit 0; fi
           git commit -m "refresh CMS inpatient data $(date -u +%Y-%m-%d)"
           for i in 1 2 3; do git pull --rebase --quiet && git push --quiet && break; sleep 5; done
