@@ -1,0 +1,7 @@
+medicare:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: "{{ env_var('MEDICARE_DB', '../build/medicare.duckdb') }}"
+      threads: 4

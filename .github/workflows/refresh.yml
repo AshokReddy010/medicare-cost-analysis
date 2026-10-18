@@ -1,0 +1,50 @@
+name: refresh
+# Monthly (CMS publishes a new data year each spring): download every release, build and test the dbt
+# models on the full data, export the dashboard files and the dbt docs, and commit them.
+on:
+  schedule:
+    - cron: "41 7 3 * *"
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: refresh
+  cancel-in-progress: false
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      MEDICARE_RAW: ${{ github.workspace }}/data/raw
+      MEDICARE_DB: ${{ github.workspace }}/build/medicare.duckdb
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - run: python -m pip install .
+      - name: Cache downloaded releases
+        uses: actions/cache@v4
+        with:
+          path: data/raw
+          key: cms-inpatient-${{ hashFiles('src/medicare/fetch.py') }}-${{ github.run_id }}
+          restore-keys: cms-inpatient-${{ hashFiles('src/medicare/fetch.py') }}-
+      - name: Download every year
+        run: python -m medicare.fetch --out data/raw
+      - name: Build and test the warehouse
+        working-directory: warehouse
+        run: |
+          mkdir -p ../build
+          dbt build --profiles-dir .
+          dbt docs generate --profiles-dir . --static
+          cp target/static_index.html ../site/dbt-docs.html
+      - name: Export the dashboard data
+        run: python -m medicare.export --db build/medicare.duckdb --out site/data
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add site/data site/dbt-docs.html
+          if git diff --cached --quiet; then echo "no changes"; exit 0; fi
+          git commit -m "refresh CMS inpatient data $(date -u +%Y-%m-%d)"
+          for i in 1 2 3; do git pull --rebase --quiet && git push --quiet && break; sleep 5; done

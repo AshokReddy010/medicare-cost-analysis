@@ -1,0 +1,20 @@
+name: medicare
+version: "1.0.0"
+config-version: 2
+profile: medicare
+model-paths: ["models"]
+test-paths: ["tests"]
+macro-paths: ["macros"]
+clean-targets: ["target", "dbt_packages"]
+
+vars:
+  min_hospital_discharges: 100      # hospitals below this volume in a year are left out of hospital rankings
+
+models:
+  medicare:
+    staging:
+      +materialized: view
+    intermediate:
+      +materialized: table
+    marts:
+      +materialized: table

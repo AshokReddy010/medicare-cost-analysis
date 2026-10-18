@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Same Diagnosis, Different Bill</title>
+<meta name="description" content="What US hospitals charge Medicare for the same inpatient stay, and what they are actually paid: CMS data for every hospital and diagnosis group, by year.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600;6..72,700&family=Public+Sans:wght@400;500;600;700&display=swap">
+<style>
+:root {
+  --bg: #f3f5f4; --panel: #ffffff; --ink: #14213d; --muted: #5c6577; --line: #d9dee3; --soft: #e9edef;
+  --paid: #23795c; --paid-soft: #dcefe7; --billed: #c8394f; --billed-soft: #f8e1e5; --hi: #e09f3e; --focus: #2b59c3;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1522; --panel: #161e2f; --ink: #e7ebf3; --muted: #9aa5b8; --line: #2a3448; --soft: #1e2739;
+    --paid: #4fc398; --paid-soft: #163428; --billed: #f0687c; --billed-soft: #3a1b22; --hi: #f0b65c; --focus: #86a8ff; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1522; --panel: #161e2f; --ink: #e7ebf3; --muted: #9aa5b8; --line: #2a3448; --soft: #1e2739;
+  --paid: #4fc398; --paid-soft: #163428; --billed: #f0687c; --billed-soft: #3a1b22; --hi: #f0b65c; --focus: #86a8ff; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--ink); font: 16px/1.6 "Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif; padding: 0 16px 72px; }
+.wrap { max-width: 1060px; margin: 0 auto; }
+a { color: inherit; text-underline-offset: 3px; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.num { font-variant-numeric: tabular-nums; }
+.paid { color: var(--paid); } .billed { color: var(--billed); }
+h1, h2 { font-family: Newsreader, Georgia, "Times New Roman", serif; font-weight: 600; letter-spacing: -0.01em; text-wrap: balance; }
+
+header { padding-block: 56px 32px; display: grid; gap: 18px; }
+h1 { font-size: clamp(2.2rem, 6vw, 4rem); line-height: 1.02; margin: 0; max-width: 16ch; }
+.deck { font-family: Newsreader, Georgia, serif; font-size: clamp(1.2rem, 2.4vw, 1.55rem); line-height: 1.4; margin: 0; max-width: 40ch; }
+.deck b { font-weight: 700; }
+.byline { color: var(--muted); font-size: 14px; }
+.kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 2px solid var(--ink); margin-top: 8px; }
+.kpis div { padding: 12px 16px 4px 0; display: grid; }
+.kpis b { font-size: 1.5rem; font-weight: 700; }
+.kpis span { color: var(--muted); font-size: 13.5px; }
+@media (max-width: 680px) { .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+section { margin-top: 56px; }
+h2 { font-size: clamp(1.5rem, 3vw, 2rem); margin: 0 0 8px; line-height: 1.15; }
+.lead { margin: 0 0 20px; color: var(--muted); max-width: 68ch; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 20px; }
+
+.controls { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; }
+select, input[type="search"] { font: inherit; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; max-width: 100%; }
+select { min-width: 0; width: min(100%, 640px); }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.seg button { font: inherit; font-size: 14px; border: 0; background: var(--panel); color: var(--muted); padding: 7px 12px; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+
+.strip-note { font-family: Newsreader, Georgia, serif; font-size: 1.25rem; line-height: 1.4; margin: 0 0 12px; max-width: 54ch; }
+svg { display: block; width: 100%; height: auto; overflow: visible; }
+svg text { fill: var(--muted); font: 12px "Public Sans", system-ui, sans-serif; }
+svg .axis line, svg .grid line { stroke: var(--line); }
+svg .lbl { fill: var(--ink); font-weight: 600; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13.5px; color: var(--muted); margin-top: 6px; }
+.legend i { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; }
+.two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; }
+@media (max-width: 820px) { .two { grid-template-columns: minmax(0, 1fr); } }
+.mini h3 { margin: 0 0 6px; font-size: 15px; }
+.mini p { margin: 0 0 10px; color: var(--muted); font-size: 14px; }
+
+.bars { display: grid; gap: 3px; }
+.bar-row { display: grid; grid-template-columns: 42px minmax(0, 1fr) 54px; align-items: center; gap: 8px; font-size: 13px; }
+.bar-row .track { position: relative; height: 14px; }
+.bar-row .track .mid { position: absolute; top: -3px; bottom: -3px; width: 1px; background: var(--muted); opacity: .6; }
+.bar-row .track .b { position: absolute; top: 2px; height: 10px; border-radius: 2px; }
+.scroll { max-height: 520px; overflow: auto; padding-right: 4px; }
+
+.finder { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 20px; align-items: start; }
+@media (max-width: 820px) { .finder { grid-template-columns: minmax(0, 1fr); } }
+.results { list-style: none; margin: 10px 0 0; padding: 0; max-height: 420px; overflow: auto; border-top: 1px solid var(--line); }
+.results li button { all: unset; box-sizing: border-box; display: grid; width: 100%; padding: 9px 4px; border-bottom: 1px solid var(--line); cursor: pointer; }
+.results li button:hover, .results li button[aria-current="true"] { background: var(--soft); }
+.results li button:focus-visible { outline: 2px solid var(--focus); }
+.results b { font-weight: 600; font-size: 14.5px; } .results span { color: var(--muted); font-size: 13px; }
+.card h3 { font-family: Newsreader, Georgia, serif; font-size: 1.45rem; margin: 0; line-height: 1.2; }
+.card .where { color: var(--muted); margin: 2px 0 16px; }
+.gauge { margin: 14px 0; }
+.gauge .t { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 4px; }
+.gauge .t b { font-weight: 700; }
+.gauge .track { position: relative; height: 10px; background: var(--soft); border-radius: 5px; }
+.gauge .track .avg { position: absolute; left: 50%; top: -4px; bottom: -4px; width: 2px; background: var(--ink); }
+.gauge .track .dot { position: absolute; top: -3px; width: 16px; height: 16px; border-radius: 50%; transform: translateX(-50%); border: 2px solid var(--panel); }
+.gauge small { color: var(--muted); font-size: 12.5px; }
+.method { columns: 2 280px; column-gap: 32px; color: var(--muted); font-size: 14.5px; }
+.method p { margin: 0 0 12px; break-inside: avoid; }
+footer { margin-top: 48px; color: var(--muted); font-size: 13.5px; border-top: 1px solid var(--line); padding-top: 16px; display: grid; gap: 4px; }
+footer p { margin: 0; }
+.loading { color: var(--muted); padding: 20px 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Same diagnosis, different bill</h1>
+    <p class="deck" id="deck">Loading CMS data for every US hospital…</p>
+    <div class="byline" id="byline"></div>
+    <div class="kpis" id="kpis"></div>
+  </header>
+
+  <main>
+    <section aria-labelledby="drg-h">
+      <h2 id="drg-h">One diagnosis, every hospital</h2>
+      <p class="lead">Each dot is one hospital's average for this diagnosis-related group (DRG). The top row is what the hospital billed Medicare (its list price); the bottom row is what it was actually paid, by Medicare plus the patient's share. The scale is logarithmic so both fit.</p>
+      <div class="panel">
+        <div class="controls">
+          <label for="drg" class="sr">Diagnosis group</label>
+          <select id="drg" aria-label="Diagnosis group"></select>
+        </div>
+        <p class="strip-note" id="strip-note"></p>
+        <div id="strip"></div>
+        <div class="legend"><span><i style="background:var(--billed)"></i>Billed (covered charges)</span><span><i style="background:var(--paid)"></i>Paid (total payment)</span><span>Ticks: 10th, 50th and 90th percentile hospital</span></div>
+      </div>
+      <div class="panel" style="margin-top:16px">
+        <div class="mini"><h3 id="trend-h">Over the years</h3><p>Average billed and paid per discharge for this DRG, all hospitals.</p></div>
+        <div id="drg-trend"></div>
+      </div>
+    </section>
+
+    <section aria-labelledby="st-h">
+      <h2 id="st-h">Where care costs more</h2>
+      <p class="lead">States compared after adjusting for case mix: each hospital's dollars are divided by what the national average would have been for exactly the same diagnoses and volumes. 1.00 is the national average.</p>
+      <div class="panel">
+        <div class="controls">
+          <div class="seg" role="group" aria-label="Measure">
+            <button data-m="payment" aria-pressed="true">Paid</button><button data-m="charge" aria-pressed="false">Billed</button><button data-m="ratio" aria-pressed="false">Billed ÷ paid</button>
+          </div>
+        </div>
+        <div class="scroll"><div class="bars" id="states"></div></div>
+      </div>
+    </section>
+
+    <section aria-labelledby="tr-h">
+      <div class="two">
+        <div>
+          <h2 id="tr-h">A decade of inpatient stays</h2>
+          <p class="lead">Medicare fee-for-service inpatient discharges and the average payment per discharge, nationally.</p>
+          <div class="panel" id="national"></div>
+        </div>
+        <div>
+          <h2 id="ar-h">City and country</h2>
+          <p class="lead">Case-mix-adjusted payment and billing by the hospital's location (USDA rural-urban codes), latest year.</p>
+          <div class="panel" id="areas"></div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="h-h">
+      <h2 id="h-h">Look up a hospital</h2>
+      <p class="lead">Every hospital's latest year, adjusted for its case mix. Hospitals with fewer than 100 qualifying discharges are listed but their indices are noisy.</p>
+      <div class="finder">
+        <div class="panel">
+          <input type="search" id="q" placeholder="Hospital name, city or state" aria-label="Search hospitals" style="width:100%">
+          <ul class="results" id="results" aria-label="Matching hospitals"></ul>
+        </div>
+        <div class="panel card" id="card" aria-live="polite"><p class="loading">Pick a hospital.</p></div>
+      </div>
+    </section>
+
+    <section aria-labelledby="m-h">
+      <h2 id="m-h">How this was made</h2>
+      <div class="method">
+        <p><b>Data.</b> CMS "Medicare Inpatient Hospitals – by Provider and Service": for each hospital and DRG, the number of Medicare fee-for-service discharges and the average covered charges, total payment and Medicare payment. CMS suppresses cells with fewer than 11 discharges, so very small volumes are absent.</p>
+        <p><b>Billed vs paid.</b> Covered charges are the hospital's list prices. Medicare does not pay them: it pays a fixed amount per DRG, adjusted for local wages, teaching and low-income patient share, and outliers. The gap between the two is a measure of chargemaster markup, not of what anyone owes.</p>
+        <p><b>Case-mix adjustment.</b> For each year and DRG, the national average per discharge is the yardstick. A hospital's index is its actual dollars divided by the yardstick dollars for its own DRGs and volumes, so hospitals and states are compared like for like.</p>
+        <p><b>Pipeline.</b> A GitHub Actions workflow downloads every release, normalises column names that changed between years, builds dbt models in DuckDB with tests (keys, ranges, reconciliation of every discharge and dollar), and publishes these files. Nothing on this page is typed by hand.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p id="gen"></p>
+    <p><a href="https://github.com/AshokReddy010/medicare-cost-analysis">Code, dbt models and tests on GitHub</a> · Data: Centers for Medicare &amp; Medicaid Services (public domain). Not medical or financial advice.</p>
+  </footer>
+</div>
+
+<script>
+const BASE = new URLSearchParams(location.search).get("base") || "https://raw.githubusercontent.com/AshokReddy010/medicare-cost-analysis/main/site/data/";
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const money = (x) => x == null ? "–" : x >= 1e9 ? `$${(x / 1e9).toFixed(1)}B` : x >= 1e6 ? `$${(x / 1e6).toFixed(1)}M` : `$${Math.round(x).toLocaleString()}`;
+const big = (x) => x >= 1e6 ? `${(x / 1e6).toFixed(2)}M` : x.toLocaleString();
+const title = (s) => s.toLowerCase().replace(/\b(\w)/g, (m) => m.toUpperCase()).replace(/\b(Or|And|With|Without|Of|In|The|Mcc|Cc|Mv)\b/g, (w) => ({ Mcc: "MCC", Cc: "CC", Mv: "MV" }[w] || w.toLowerCase()));
+let D = {};
+
+function quant(sorted, q) { if (!sorted.length) return null; const p = (sorted.length - 1) * q, lo = Math.floor(p), hi = Math.ceil(p); return sorted[lo] + (sorted[hi] - sorted[lo]) * (p - lo); }
+
+function strip(code) {
+  const pts = D.drg_hospitals[code] || [];
+  const drg = D.drgs.find((d) => d.code === code);
+  const W = 960, H = 210, L = 70, R = 20, rowY = { billed: 62, paid: 152 };
+  const pays = pts.map((p) => p[3]).sort((a, b) => a - b), chg = pts.map((p) => p[4]).sort((a, b) => a - b);
+  const lo = Math.max(500, Math.min(pays[0], chg[0]) * 0.85), hi = Math.max(pays[pays.length - 1], chg[chg.length - 1]) * 1.1;
+  const x = (v) => L + (Math.log10(v) - Math.log10(lo)) / (Math.log10(hi) - Math.log10(lo)) * (W - L - R);
+  const ticks = [];
+  for (let e = Math.floor(Math.log10(lo)); e <= Math.ceil(Math.log10(hi)); e++) for (const m of [1, 2, 5]) { const v = m * 10 ** e; if (v >= lo && v <= hi) ticks.push(v); }
+  let jitter = 0;
+  const dots = (row, idx, color) => pts.map((p) => { jitter = (jitter * 9301 + 49297) % 233280; const dy = (jitter / 233280 - 0.5) * 46;
+    return `<circle cx="${x(p[idx]).toFixed(1)}" cy="${(rowY[row] + dy).toFixed(1)}" r="2.6" fill="${color}" fill-opacity=".38"><title>${esc(p[1])} · ${money(p[idx])} · ${p[2]} discharges</title></circle>`; }).join("");
+  const marks = (row, arr, color) => [0.1, 0.5, 0.9].map((q) => { const v = quant(arr, q); return `<line x1="${x(v)}" x2="${x(v)}" y1="${rowY[row] - 32}" y2="${rowY[row] + 32}" stroke="${color}" stroke-width="${q === 0.5 ? 3 : 1.6}"/>
+    <text x="${x(v)}" y="${row === "billed" ? rowY[row] - 38 : rowY[row] + 46}" text-anchor="middle" class="lbl">${money(v)}</text>`; }).join("");
+  $("#strip").innerHTML = `<svg viewBox="0 0 ${W} ${H + 20}" role="img" aria-label="Hospital averages for ${esc(drg?.desc || code)}: billed median ${money(quant(chg, .5))}, paid median ${money(quant(pays, .5))}">
+    <g class="grid">${ticks.map((t) => `<line x1="${x(t)}" x2="${x(t)}" y1="18" y2="${H}"/>`).join("")}</g>
+    <g>${ticks.map((t) => `<text x="${x(t)}" y="${H + 16}" text-anchor="middle">${money(t)}</text>`).join("")}</g>
+    <text x="0" y="${rowY.billed + 4}" class="lbl" style="fill:var(--billed)">Billed</text><text x="0" y="${rowY.paid + 4}" class="lbl" style="fill:var(--paid)">Paid</text>
+    ${dots("billed", 4, "var(--billed)")}${dots("paid", 3, "var(--paid)")}${marks("billed", chg, "var(--billed)")}${marks("paid", pays, "var(--paid)")}</svg>`;
+  const pr = quant(pays, .9) / quant(pays, .1), cr = quant(chg, .9) / quant(chg, .1);
+  $("#strip-note").innerHTML = `For <b>${esc(title(drg?.desc || code))}</b> at ${pts.length.toLocaleString()} hospitals, the 90th-percentile hospital bills <b class="billed">${cr.toFixed(1)}×</b> what the 10th-percentile one does, but is paid only <b class="paid">${pr.toFixed(1)}×</b> as much.`;
+  drgTrend(drg);
+}
+
+function lineChart(el, series, years, fmt, label, W = 960, H = 230) {
+  const L = 64, R = 24, T = 16, B = 30;
+  const all = series.flatMap((s) => s.values.filter((v) => v != null));
+  const hi = Math.max(...all) * 1.08, lo = 0;
+  const x = (i) => L + (years.length > 1 ? i / (years.length - 1) : 0.5) * (W - L - R);
+  const y = (v) => T + (1 - (v - lo) / (hi - lo)) * (H - T - B);
+  const ticks = Array.from({ length: 5 }, (_, i) => lo + (hi - lo) * i / 4);
+  el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(label)}">
+    <g class="grid">${ticks.map((t) => `<line x1="${L}" x2="${W - R}" y1="${y(t)}" y2="${y(t)}"/>`).join("")}</g>
+    ${ticks.map((t) => `<text x="${L - 8}" y="${y(t) + 4}" text-anchor="end">${fmt(t)}</text>`).join("")}
+    ${years.map((yr, i) => (W > 700 || years.length <= 7 || i % 2 === 0) ? `<text x="${x(i)}" y="${H - 8}" text-anchor="middle">${yr}</text>` : "").join("")}
+    ${series.map((s) => { const d = s.values.map((v, i) => v == null ? "" : `${i && s.values[i - 1] != null ? "L" : "M"}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join("");
+      const last = s.values.length - 1;
+      return `<path d="${d}" fill="none" stroke="${s.color}" stroke-width="2.5"/>${s.values.map((v, i) => v == null ? "" : `<circle cx="${x(i)}" cy="${y(v)}" r="3.2" fill="${s.color}"><title>${years[i]}: ${fmt(v)}</title></circle>`).join("")}
+        <text x="${x(last)}" y="${y(s.values[last]) - 10}" text-anchor="end" class="lbl" style="fill:${s.color}">${esc(s.name)} ${fmt(s.values[last])}</text>`; }).join("")}</svg>`;
+}
+
+function drgTrend(drg) {
+  if (!drg) return;
+  const years = D.meta.years;
+  const byYear = Object.fromEntries(drg.years.map((r) => [r[0], r]));
+  lineChart($("#drg-trend"), [
+    { name: "Billed", color: "var(--billed)", values: years.map((y) => byYear[y]?.[4] ?? null) },
+    { name: "Paid", color: "var(--paid)", values: years.map((y) => byYear[y]?.[3] ?? null) },
+  ], years, money, "Average billed and paid per discharge by year");
+}
+
+let measure = "payment";
+function states() {
+  const y = D.meta.latest_year, idx = { payment: 2, charge: 3, ratio: 4 }[measure];
+  const rows = Object.entries(D.states).map(([s, arr]) => [s, arr.find((r) => r[0] === y)]).filter(([, r]) => r && r[1] >= 500)
+    .map(([s, r]) => [s, r[idx], r[1]]).sort((a, b) => b[1] - a[1]);
+  const isRatio = measure === "ratio";
+  const nat = isRatio ? D.national.at(-1).charge_ratio : 1;
+  const max = Math.max(...rows.map((r) => r[1])), min = isRatio ? 0 : Math.min(...rows.map((r) => r[1]), 0.6);
+  const pos = (v) => (v - min) / (max - min) * 100;
+  const color = measure === "payment" ? "var(--paid)" : "var(--billed)";
+  $("#states").innerHTML = rows.map(([s, v, d]) => {
+    const a = pos(Math.min(v, nat)), b = pos(Math.max(v, nat));
+    return `<div class="bar-row" title="${s}: ${v.toFixed(2)} (${d.toLocaleString()} discharges)"><span>${s}</span>
+      <div class="track"><span class="b" style="left:${isRatio ? 0 : a}%;width:${isRatio ? pos(v) : Math.max(b - a, 0.4)}%;background:${color};opacity:${isRatio || v >= nat ? .85 : .45}"></span><span class="mid" style="left:${pos(nat)}%"></span></div>
+      <span class="num">${isRatio ? v.toFixed(1) + "×" : v.toFixed(2)}</span></div>`; }).join("");
+}
+
+function national() {
+  const n = D.national, years = n.map((r) => r.year);
+  const el = $("#national");
+  el.innerHTML = `<div class="mini"><h3>Discharges</h3></div><div id="n1"></div><div class="mini" style="margin-top:12px"><h3>Paid per discharge</h3></div><div id="n2"></div>`;
+  lineChart($("#n1"), [{ name: "", color: "var(--ink)", values: n.map((r) => r.discharges) }], years, (v) => big(Math.round(v)), "Discharges by year", 520, 220);
+  lineChart($("#n2"), [{ name: "", color: "var(--paid)", values: n.map((r) => r.per_discharge) }], years, money, "Payment per discharge by year", 520, 220);
+}
+
+function areas() {
+  const y = D.meta.latest_year;
+  const rows = D.areas.filter((a) => a.year === y && a.area !== "Unknown");
+  const order = ["Metropolitan", "Micropolitan", "Small town and rural"];
+  rows.sort((a, b) => order.indexOf(a.area) - order.indexOf(b.area));
+  $("#areas").innerHTML = rows.map((a) => `<div class="gauge"><div class="t"><span>${esc(a.area)} <small>· ${a.hospitals.toLocaleString()} hospitals</small></span></div>
+    ${gauge("Paid", a.payment_index, "var(--paid)")}${gauge("Billed", a.charge_index, "var(--billed)")}</div>`).join("") +
+    `<p class="lead" style="margin:8px 0 0;font-size:13.5px">Index 1.00 = national average for the same diagnoses.</p>`;
+}
+
+function gauge(label, v, color) {
+  const p = Math.max(2, Math.min(98, 50 + (v - 1) * 60));
+  return `<div style="display:grid;grid-template-columns:52px 1fr 48px;gap:8px;align-items:center;margin:8px 0;font-size:13.5px"><span>${label}</span>
+    <div class="gauge" style="margin:0"><div class="track"><span class="avg"></span><span class="dot" style="left:${p}%;background:${color}"></span></div></div><b class="num">${v.toFixed(2)}</b></div>`;
+}
+
+let H = [], cur = null;
+function search() {
+  const q = $("#q").value.trim().toLowerCase();
+  const list = (q ? H.filter((h) => `${h[1]} ${h[2]} ${h[3]}`.toLowerCase().includes(q)) : H).slice(0, 60);
+  $("#results").innerHTML = list.map((h) => `<li><button data-ccn="${h[0]}" aria-current="${h[0] === cur}"><b>${esc(title(h[1]))}</b><span>${esc(title(h[2] || ""))}, ${esc(h[3])} · ${h[5].toLocaleString()} discharges</span></button></li>`).join("")
+    || `<li style="padding:12px 4px;color:var(--muted)">No hospital matches “${esc(q)}”.</li>`;
+  $("#results").querySelectorAll("button").forEach((b) => b.onclick = () => { cur = b.dataset.ccn; card(); search(); });
+}
+
+function card() {
+  const h = H.find((x) => x[0] === cur);
+  if (!h) return;
+  const [ccn, name, city, state, area, dis, drgs, pi, ci, ratio] = h;
+  const nat = D.national.at(-1).charge_ratio;
+  $("#card").innerHTML = `<h3>${esc(title(name))}</h3><p class="where">${esc(title(city || ""))}, ${esc(state)} · ${esc(area)} · CMS number ${esc(ccn)}</p>
+    <p style="margin:0 0 6px">${dis.toLocaleString()} Medicare discharges across ${drgs} diagnosis groups in ${D.meta.latest_year}.</p>
+    ${gauge("Paid", pi, "var(--paid)")}${gauge("Billed", ci, "var(--billed)")}
+    <p style="margin:14px 0 0">For every dollar it is paid, this hospital bills <b class="billed">$${ratio.toFixed(2)}</b> (national: $${nat.toFixed(2)}).
+    ${dis < 100 ? `<br><small style="color:var(--muted)">Low volume: treat these indices as rough.</small>` : ""}</p>`;
+}
+
+async function get(name) { const r = await fetch(BASE + name, { cache: "no-store" }); if (!r.ok) throw new Error(`${name}: HTTP ${r.status}`); return r.json(); }
+
+(async function () {
+  try {
+    const names = ["meta", "national", "states", "areas", "drgs", "drg_hospitals", "hospitals", "findings"];
+    const docs = await Promise.all(names.map((n) => get(n + ".json")));
+    names.forEach((n, i) => (D[n] = docs[i]));
+  } catch (e) {
+    $("#deck").textContent = `The data has not been published yet (${e.message}).`;
+    return;
+  }
+  const last = D.national.at(-1), f = D.findings;
+  $("#deck").innerHTML = `In ${last.year}, US hospitals billed Medicare <b class="billed">$${last.charge_ratio.toFixed(2)}</b> for every <b class="paid">$1</b> they were paid for an inpatient stay, and the gap varies enormously from one hospital to the next.`;
+  $("#byline").textContent = `CMS inpatient data, ${D.meta.years[0]}–${last.year} · ${last.hospitals.toLocaleString()} hospitals · ${last.drgs.toLocaleString()} diagnosis groups`;
+  $("#kpis").innerHTML = [[big(last.discharges), `discharges in ${last.year}`], [money(last.payment), "paid by Medicare and patients"],
+    [money(last.per_discharge), "paid per discharge"], [`${f.median_hospital_charge_ratio.toFixed(1)}×`, "billed ÷ paid at the median hospital"]]
+    .map(([b, s]) => `<div><b class="num">${b}</b><span>${s}</span></div>`).join("");
+  $("#drg").innerHTML = D.meta.top_drgs.map((c) => { const d = D.drgs.find((x) => x.code === c); return `<option value="${c}">${c} · ${esc(title(d?.desc || ""))}</option>`; }).join("");
+  $("#drg").onchange = () => strip($("#drg").value);
+  strip(D.meta.top_drgs[0]);
+  document.querySelectorAll(".seg button").forEach((b) => b.onclick = () => { measure = b.dataset.m; document.querySelectorAll(".seg button").forEach((x) => x.setAttribute("aria-pressed", String(x === b))); states(); });
+  states(); national(); areas();
+  H = D.hospitals.rows; cur = H[0]?.[0]; $("#q").oninput = search; search(); card();
+  $("#gen").textContent = `Built ${new Date(D.meta.generated_at).toISOString().slice(0, 10)} from ${D.meta.source}.`;
+})();
+</script>
+</body>
+</html>

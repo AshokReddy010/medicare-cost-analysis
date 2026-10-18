@@ -1,0 +1,55 @@
+version: 2
+models:
+  - name: dim_drg
+    description: Diagnosis-related groups, latest description.
+    columns:
+      - name: drg_code
+        data_tests: [unique, not_null]
+  - name: dim_provider
+    description: Hospitals by CMS Certification Number, latest name and location, with a RUCA-based area type.
+    columns:
+      - name: ccn
+        data_tests: [unique, not_null]
+      - name: area_type
+        data_tests:
+          - accepted_values:
+              arguments: {values: [Metropolitan, Micropolitan, Small town and rural, Unknown]}
+  - name: fct_provider_drg_year
+    description: Hospital x DRG x year with payment and charge indices against the national DRG-year average.
+    data_tests:
+      - unique_combination: {arguments: {columns: [data_year, ccn, drg_code]}}
+    columns:
+      - name: ccn
+        data_tests:
+          - relationships: {arguments: {to: ref('dim_provider'), field: ccn}}
+      - name: drg_code
+        data_tests:
+          - relationships: {arguments: {to: ref('dim_drg'), field: drg_code}}
+      - name: payment_index
+        data_tests:
+          - in_range: {arguments: {min: 0.05, max: 20}}
+  - name: mart_drg_year
+    description: Price spread for each DRG and year.
+    data_tests:
+      - unique_combination: {arguments: {columns: [data_year, drg_code]}}
+    columns:
+      - name: payment_p10
+        data_tests:
+          - not_above: {arguments: {other: payment_p90}}
+  - name: mart_provider_year
+    description: Hospital-year profile with case-mix-adjusted indices.
+    data_tests:
+      - unique_combination: {arguments: {columns: [data_year, ccn]}}
+  - name: mart_state_year
+    data_tests:
+      - unique_combination: {arguments: {columns: [data_year, state]}}
+  - name: mart_national_year
+    columns:
+      - name: data_year
+        data_tests: [unique, not_null]
+      - name: medicare_share
+        data_tests:
+          - in_range: {arguments: {min: 0.5, max: 1.0}}
+  - name: mart_area_type_year
+    data_tests:
+      - unique_combination: {arguments: {columns: [data_year, area_type]}}

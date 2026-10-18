@@ -1,0 +1,27 @@
+version: 2
+models:
+  - name: stg_inpatient
+    description: Typed CMS rows with implied totals (average x discharges).
+    data_tests:
+      - unique_combination: {arguments: {columns: [data_year, ccn, drg_code]}}
+    columns:
+      - name: data_year
+        data_tests: [not_null]
+      - name: ccn
+        data_tests: [not_null]
+      - name: state
+        data_tests: [not_null]
+      - name: drg_code
+        data_tests: [not_null]
+      - name: discharges
+        description: CMS suppresses cells with fewer than 11 discharges, so every row has at least 11.
+        data_tests:
+          - in_range: {arguments: {min: 11}}
+      - name: avg_total_payment
+        data_tests:
+          - in_range: {arguments: {min: 0, max: 2000000}}
+      - name: avg_medicare_payment
+        data_tests:
+          - not_above:
+              arguments: {other: avg_total_payment, tolerance: 1.0}
+              config: {severity: warn}

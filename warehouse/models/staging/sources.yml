@@ -1,0 +1,9 @@
+version: 2
+sources:
+  - name: cms
+    description: CMS Medicare Inpatient Hospitals - by Provider and Service, one normalised Parquet file per data year.
+    meta:
+      external_location: "read_parquet('{{ env_var('MEDICARE_RAW', '../data/raw') }}/inpatient_*.parquet')"
+    tables:
+      - name: inpatient
+        description: One row per hospital (CCN), DRG and data year. CMS suppresses cells with fewer than 11 discharges.

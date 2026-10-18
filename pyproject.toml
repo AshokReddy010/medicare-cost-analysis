@@ -1,0 +1,51 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "medicare-cost-analysis"
+version = "1.0.0"
+description = "What US hospitals bill Medicare versus what they are paid: CMS inpatient data for every hospital and DRG, modelled with dbt and DuckDB."
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "Ashok Reddy" }]
+requires-python = ">=3.10"
+dependencies = ["duckdb>=1.1", "pandas>=2.0", "pyarrow>=14", "dbt-duckdb>=1.8"]
+keywords = ["healthcare", "medicare", "dbt", "duckdb", "analytics engineering"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: MIT License",
+  "Topic :: Database",
+  "Intended Audience :: Developers",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "pytest-cov>=5", "ruff>=0.6", "mypy>=1.10", "pandas-stubs"]
+
+[project.scripts]
+medicare-fetch = "medicare.fetch:main"
+medicare-export = "medicare.export:main"
+
+[project.urls]
+Homepage = "https://github.com/AshokReddy010/medicare-cost-analysis"
+Dashboard = "https://ashokreddy010.github.io/medicare-cost-analysis/"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM"]
+ignore = ["E501", "B023"]
+
+[tool.mypy]
+python_version = "3.10"
+ignore_missing_imports = true
+warn_unused_ignores = false
