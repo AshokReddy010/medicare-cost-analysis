@@ -209,7 +209,7 @@ function strip(code) {
   const dots = (row, idx, color) => pts.map((p) => { jitter = (jitter * 9301 + 49297) % 233280; const dy = (jitter / 233280 - 0.5) * 46;
     return `<circle cx="${x(p[idx]).toFixed(1)}" cy="${(rowY[row] + dy).toFixed(1)}" r="2.6" fill="${color}" fill-opacity=".38"><title>${esc(p[1])} · ${money(p[idx])} · ${p[2]} discharges</title></circle>`; }).join("");
   const marks = (row, arr, color) => [0.1, 0.5, 0.9].map((q) => { const v = quant(arr, q); return `<line x1="${x(v)}" x2="${x(v)}" y1="${rowY[row] - 32}" y2="${rowY[row] + 32}" stroke="${color}" stroke-width="${q === 0.5 ? 3 : 1.6}"/>
-    <text x="${x(v)}" y="${row === "billed" ? rowY[row] - 38 : rowY[row] + 46}" text-anchor="middle" class="lbl">${money(v)}</text>`; }).join("");
+    <text x="${x(v)}" y="${(row === "billed") !== (q === 0.5) ? rowY[row] - 38 : rowY[row] + 46}" text-anchor="middle" class="lbl">${money(v)}</text>`; }).join("");
   $("#strip").innerHTML = `<svg viewBox="0 0 ${W} ${H + 20}" role="img" aria-label="Hospital averages for ${esc(drg?.desc || code)}: billed median ${money(quant(chg, .5))}, paid median ${money(quant(pays, .5))}">
     <g class="grid">${ticks.map((t) => `<line x1="${x(t)}" x2="${x(t)}" y1="18" y2="${H}"/>`).join("")}</g>
     <g>${ticks.map((t) => `<text x="${x(t)}" y="${H + 16}" text-anchor="middle">${money(t)}</text>`).join("")}</g>
